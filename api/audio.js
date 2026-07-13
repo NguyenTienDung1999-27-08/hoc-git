@@ -14,8 +14,7 @@ Chỉ trả lời đúng 1 dòng theo mẫu:
 [Điểm/100] - [Nhận xét rất ngắn gọn, chỉ ra lỗi sai thanh điệu hoặc vận mẫu nếu có]`;
 
     // Gọi AI (Dùng bản flash-lite để phản hồi nhanh nhất)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
-    
+const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;    
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
