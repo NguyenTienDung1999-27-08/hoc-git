@@ -455,36 +455,6 @@ tabBtns.forEach(btn => {
 });
 
 /* FLASHCARD */
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition;
-
-if(SpeechRecognition){
-  recognition = new SpeechRecognition();
-  recognition.lang = "zh-CN";
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-}
-
-async function scorePronunciation(targetWord,userSpokenText){
-  const prompt = `
-Bạn là giáo viên dạy tiếng Trung.
-
-Từ cần đọc: "${targetWord}"
-Hệ thống nghe được học sinh đọc: "${userSpokenText}"
-
-Chấm phát âm từ 0 đến 100.
-Chỉ trả lời đúng 1 dòng:
-[Điểm/100] - [Nhận xét rất ngắn bằng tiếng Việt]
-`;
-
-  try{
-    const text = await callGeminiText(prompt);
-    return `SUCCESS|${text}`;
-  }catch(error){
-    return `ERROR|⚠️ Lỗi API: ${error.message}`;
-  }
-}
-
 let idx = 0;
 
 function renderFlashcard(){
@@ -531,8 +501,6 @@ function renderFlashcard(){
     speak(item.hanzi);
   });
 
-  /* KÉO XUỐNG TÌM HÀM renderFlashcard() VÀ THAY THẾ ĐOẠN btnMic BẰNG ĐOẠN SAU: */
-
   const btnMic = document.getElementById("btnMic");
   const aiFeedback = document.getElementById("aiFeedback");
   
@@ -542,10 +510,8 @@ function renderFlashcard(){
   btnMic.addEventListener("click", async e => {
     e.stopPropagation();
 
-    // NẾU CHƯA GHI ÂM -> BẮT ĐẦU GHI
     if (!mediaRecorder || mediaRecorder.state === "inactive") {
       try {
-        // Xin quyền Micro (chạy được trên mọi điện thoại)
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
@@ -554,24 +520,19 @@ function renderFlashcard(){
           if (event.data.size > 0) audioChunks.push(event.data);
         };
 
-        // KHI BẤM DỪNG -> GỬI FILE CHO AI
         mediaRecorder.onstop = async () => {
           btnMic.classList.remove("recording");
           btnMic.innerHTML = "⏳ AI đang nghe...";
           
           const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-          
-          // Chuyển file âm thanh thành mã Base64 để gửi qua mạng
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
           reader.onloadend = async () => {
-            // Tách lấy loại file và dữ liệu
             const base64String = reader.result;
             const mimeType = base64String.split(';')[0].split(':')[1];
             const base64Data = base64String.split(',')[1];
             
             try {
-              // Gửi lên server Vercel của ngài
               const res = await fetch('/api/audio', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -583,7 +544,7 @@ function renderFlashcard(){
               });
               
               const data = await res.json();
-              if(!res.ok) throw new Error(data.error);
+              if(!res.ok) throw new Error(data.error || "Lỗi Server");
 
               aiFeedback.className = "ai-feedback result";
               aiFeedback.innerHTML = `<strong>Đánh giá:</strong> ${formatAIText(data.result)}`;
@@ -594,27 +555,25 @@ function renderFlashcard(){
               aiFeedback.style.display = "block";
             } finally {
               btnMic.innerHTML = "🎤 Thử lại";
-              // Tắt đèn Micro trên trình duyệt
               stream.getTracks().forEach(track => track.stop());
             }
           };
         };
 
-        // Bắt đầu quay phim (thu âm)
         mediaRecorder.start();
         btnMic.classList.add("recording");
         btnMic.innerHTML = "🎙️ Đang nghe (Bấm để dừng)";
         aiFeedback.style.display = "none";
 
       } catch (err) {
-        alert("Không thể bật Micro! Ngài vui lòng cấp quyền cho trình duyệt nhé.");
+        alert("Không thể bật Micro! Vui lòng cấp quyền cho trình duyệt.");
       }
     } 
-    // NẾU ĐANG GHI ÂM -> BẤM ĐỂ DỪNG
     else if (mediaRecorder.state === "recording") {
       mediaRecorder.stop();
     }
   });
+}
 
 document.getElementById("btnNextFlash").addEventListener("click",() => {
   idx = (idx + 1) % VOCAB.length;
