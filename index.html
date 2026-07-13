@@ -352,7 +352,7 @@ textarea.translate-input:focus{outline:none;border-color:var(--jade);background:
 
 /* API GEMINI */
 // Kiểm tra xem đã có Key trong trình duyệt chưa, nếu chưa thì hỏi để nhập
-let GEMINI_API_KEY = localStorage.getItem("my_gemini_key");
+const GEMINI_API_KEY = localStorage.getItem("my_gemini_key");
 
 if (!GEMINI_API_KEY) {
     GEMINI_API_KEY = prompt("Chưa có API Key. Hãy dán API Key của bạn vào đây:");
