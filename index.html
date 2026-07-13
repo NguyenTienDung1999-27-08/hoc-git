@@ -531,63 +531,90 @@ function renderFlashcard(){
     speak(item.hanzi);
   });
 
+  /* KÉO XUỐNG TÌM HÀM renderFlashcard() VÀ THAY THẾ ĐOẠN btnMic BẰNG ĐOẠN SAU: */
+
   const btnMic = document.getElementById("btnMic");
   const aiFeedback = document.getElementById("aiFeedback");
+  
+  let mediaRecorder;
+  let audioChunks = [];
 
-  btnMic.addEventListener("click",e => {
+  btnMic.addEventListener("click", async e => {
     e.stopPropagation();
 
-    if(!recognition){
-      alert("Trình duyệt không hỗ trợ thu âm.");
-      return;
-    }
+    // NẾU CHƯA GHI ÂM -> BẮT ĐẦU GHI
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+      try {
+        // Xin quyền Micro (chạy được trên mọi điện thoại)
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
 
-    btnMic.classList.add("recording");
-    btnMic.innerHTML = "🎙️ Đang nghe...";
-    aiFeedback.style.display = "none";
-    aiFeedback.className = "ai-feedback";
+        mediaRecorder.ondataavailable = event => {
+          if (event.data.size > 0) audioChunks.push(event.data);
+        };
 
-    recognition.start();
+        // KHI BẤM DỪNG -> GỬI FILE CHO AI
+        mediaRecorder.onstop = async () => {
+          btnMic.classList.remove("recording");
+          btnMic.innerHTML = "⏳ AI đang nghe...";
+          
+          const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+          
+          // Chuyển file âm thanh thành mã Base64 để gửi qua mạng
+          const reader = new FileReader();
+          reader.readAsDataURL(audioBlob);
+          reader.onloadend = async () => {
+            // Tách lấy loại file và dữ liệu
+            const base64String = reader.result;
+            const mimeType = base64String.split(';')[0].split(':')[1];
+            const base64Data = base64String.split(',')[1];
+            
+            try {
+              // Gửi lên server Vercel của ngài
+              const res = await fetch('/api/audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  audioBase64: base64Data,
+                  mimeType: mimeType,
+                  targetWord: item.hanzi
+                })
+              });
+              
+              const data = await res.json();
+              if(!res.ok) throw new Error(data.error);
 
-    recognition.onresult = async event => {
-      const userSpokenText = event.results[0][0].transcript;
+              aiFeedback.className = "ai-feedback result";
+              aiFeedback.innerHTML = `<strong>Đánh giá:</strong> ${formatAIText(data.result)}`;
+              aiFeedback.style.display = "block";
+            } catch (err) {
+              aiFeedback.className = "ai-feedback error";
+              aiFeedback.innerHTML = `Lỗi: ${err.message}`;
+              aiFeedback.style.display = "block";
+            } finally {
+              btnMic.innerHTML = "🎤 Thử lại";
+              // Tắt đèn Micro trên trình duyệt
+              stream.getTracks().forEach(track => track.stop());
+            }
+          };
+        };
 
-      btnMic.classList.remove("recording");
-      btnMic.innerHTML = "⏳ AI đang chấm...";
+        // Bắt đầu quay phim (thu âm)
+        mediaRecorder.start();
+        btnMic.classList.add("recording");
+        btnMic.innerHTML = "🎙️ Đang nghe (Bấm để dừng)";
+        aiFeedback.style.display = "none";
 
-      const responseStr = await scorePronunciation(item.hanzi,userSpokenText);
-      const [status,resultText] = responseStr.split("|");
-
-      if(status === "ERROR"){
-        aiFeedback.classList.add("error");
-        aiFeedback.innerHTML = `
-          ${escapeHtml(resultText)}
-          <br>
-          <span style="font-size:12px;color:#888;margin-top:4px;display:block;">
-            Ngài vừa đọc thành: <b>${escapeHtml(userSpokenText)}</b>
-          </span>
-        `;
-      }else{
-        aiFeedback.innerHTML = `
-          <strong>Đánh giá:</strong> ${formatAIText(resultText)}
-          <br>
-          <span style="font-size:12px;color:#666;margin-top:4px;display:block;">
-            Ngài vừa đọc thành: <b>${escapeHtml(userSpokenText)}</b>
-          </span>
-        `;
+      } catch (err) {
+        alert("Không thể bật Micro! Ngài vui lòng cấp quyền cho trình duyệt nhé.");
       }
-
-      aiFeedback.style.display = "block";
-      btnMic.innerHTML = "🎤 Thử lại";
-    };
-
-    recognition.onerror = () => {
-      btnMic.classList.remove("recording");
-      btnMic.innerHTML = "🎤 Lỗi mic/Thử lại";
-      alert("Lỗi thu âm. Ngài nhớ cấp quyền dùng Micro trên trình duyệt nhé!");
-    };
+    } 
+    // NẾU ĐANG GHI ÂM -> BẤM ĐỂ DỪNG
+    else if (mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+    }
   });
-}
 
 document.getElementById("btnNextFlash").addEventListener("click",() => {
   idx = (idx + 1) % VOCAB.length;
