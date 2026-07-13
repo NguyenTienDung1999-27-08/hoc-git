@@ -353,8 +353,24 @@ textarea.translate-input:focus{outline:none;border-color:var(--jade);background:
 <script>
 /* API GEMINI */
 // Kiểm tra xem đã có Key trong trình duyệt chưa...
-let GEMINI_API_KEY = localStorage.getItem("my_gemini_key");
+/* SỬA THÀNH HÀM NÀY: */
+async function callOneGeminiModel(model, prompt, maxOutputTokens = 220) {
+  // Thay vì gọi thẳng Google, ta gọi vào /api/chat của chính website ngài
+  const response = await fetch('/api/chat', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: prompt })
+  });
 
+  const data = await response.json();
+  
+  // Kiểm tra nếu Server báo lỗi
+  if (!response.ok || !data.candidates) {
+    throw new Error(data.error || "Không gọi được AI");
+  }
+
+  return data.candidates[0].content.parts[0].text.trim();
+}
 const GEMINI_MODELS = [
   "gemini-3.1-flash-lite",
   "gemini-3-flash-preview",
