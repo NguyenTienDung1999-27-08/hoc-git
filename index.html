@@ -355,8 +355,7 @@ textarea.translate-input:focus{outline:none;border-color:var(--jade);background:
 // Kiểm tra xem đã có Key trong trình duyệt chưa...
 /* SỬA THÀNH HÀM NÀY: */
 async function callOneGeminiModel(model, prompt, maxOutputTokens = 220) {
-  // Thay vì gọi thẳng Google, ta gọi vào /api/chat của chính website ngài
-  const response = await fetch('/api/chat', {
+  const response = await fetch('/api/chat', { // Phải là /api/chat
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: prompt })
@@ -364,9 +363,8 @@ async function callOneGeminiModel(model, prompt, maxOutputTokens = 220) {
 
   const data = await response.json();
   
-  // Kiểm tra nếu Server báo lỗi
-  if (!response.ok || !data.candidates) {
-    throw new Error(data.error || "Không gọi được AI");
+  if (!response.ok) {
+    throw new Error(data.error || "Lỗi Server");
   }
 
   return data.candidates[0].content.parts[0].text.trim();
