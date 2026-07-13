@@ -316,7 +316,9 @@ textarea.translate-input:focus{outline:none;border-color:var(--jade);background:
         <div class="tts-controls">
           <button class="btn-audio-text" onclick="readChineseSource()">🔊 Đọc</button>
           <button class="btn-audio-soft" onclick="pauseChineseSpeech()">⏸️ Dừng</button>
-          
+          <button class="btn-audio-soft" onclick="setSpeechRate(0.62); readChineseSource()">🐢 Chậm</button>
+          <button class="btn-audio-soft" onclick="setSpeechRate(0.82); readChineseSource()">🙂 Vừa</button>
+          <button class="btn-audio-soft" onclick="setSpeechRate(1.08); readChineseSource()">⚡ Nhanh</button>
         </div>
         <div class="tts-status" id="tts-status">Trạng thái: Sẵn sàng</div>
       </div>
@@ -368,7 +370,7 @@ function formatAIText(text){
   return safeText;
 }
 
-// HÀM GỌI AI DUY NHẤT LÊN SERVER CỦA NGÀI
+// HÀM GỌI AI DUY NHẤT LÊN SERVER
 async function callGeminiText(prompt) {
   const response = await fetch('/api/chat', {
     method: "POST",
@@ -589,7 +591,7 @@ function speak(text){
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "zh-CN";
-  utterance.rate = .82;
+  utterance.rate = speechRate || 0.82; // Dùng tốc độ đang được chỉnh
   window.speechSynthesis.speak(utterance);
 }
 
@@ -830,11 +832,6 @@ function setSpeechRate(rate){
   const rateName = getSpeechRateName(rate);
   setTtsStatus(`Tốc độ <strong>${rateName}</strong> (${rate}x)`);
 
-  /*
-    Nếu đang đọc mà đổi tốc độ,
-    trình duyệt không đổi rate giữa chừng được,
-    nên ta dừng rồi đọc lại từ gần vị trí hiện tại.
-  */
   if(currentSpeechText && window.speechSynthesis && window.speechSynthesis.speaking){
     const savedOffset = currentSpeechOffset;
     window.speechSynthesis.cancel();
