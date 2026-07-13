@@ -813,9 +813,36 @@ let currentUtterance = null;
 let isSpeechPausedByUser = false;
 let speechRate = .82;
 
+function getSpeechRateName(rate){
+  if(rate <= 0.65) return "Chậm";
+  if(rate >= 1) return "Nhanh";
+  return "Vừa";
+}
+
 function setTtsStatus(text){
   const el = document.getElementById("tts-status");
-  if(el) el.textContent = "Trạng thái: " + text;
+  if(el) el.innerHTML = "Trạng thái: " + text;
+}
+
+function setSpeechRate(rate){
+  speechRate = rate;
+
+  const rateName = getSpeechRateName(rate);
+  setTtsStatus(`Tốc độ <strong>${rateName}</strong> (${rate}x)`);
+
+  /*
+    Nếu đang đọc mà đổi tốc độ,
+    trình duyệt không đổi rate giữa chừng được,
+    nên ta dừng rồi đọc lại từ gần vị trí hiện tại.
+  */
+  if(currentSpeechText && window.speechSynthesis && window.speechSynthesis.speaking){
+    const savedOffset = currentSpeechOffset;
+    window.speechSynthesis.cancel();
+
+    setTimeout(() => {
+      speakChineseFrom(currentSpeechText, savedOffset);
+    }, 120);
+  }
 }
 
 function speakChineseFrom(text, offset = 0){
@@ -846,7 +873,7 @@ function speakChineseFrom(text, offset = 0){
 
   currentUtterance.onboundary = event => {
     if(typeof event.charIndex === "number"){
-      currentSpeechOffset = currentSpeechOffset + event.charIndex;
+      currentSpeechOffset = offset + event.charIndex;
     }
   };
 
@@ -861,7 +888,7 @@ function speakChineseFrom(text, offset = 0){
     setTtsStatus("Dừng");
   };
 
-  setTtsStatus("Đang đọc");
+  setTtsStatus(`Đang đọc, tốc độ <strong>${getSpeechRateName(speechRate)}</strong> (${speechRate}x)`);
   window.speechSynthesis.speak(currentUtterance);
 }
 
@@ -871,10 +898,9 @@ function pauseChineseSpeech(){
   if(window.speechSynthesis.speaking){
     isSpeechPausedByUser = true;
     window.speechSynthesis.cancel();
-    setTtsStatus("Đã tạm dừng, bấm Tiếp tục để đọc tiếp");
+    setTtsStatus("Đã dừng");
   }
 }
-
 
 function readChineseSource(){
   const el = document.getElementById("source-cn2vn");
@@ -903,7 +929,9 @@ function showTranslationResult(feedbackBox,text,chineseToRead = ""){
       <div class="answer-audio-wrap">
         <button class="btn-audio-text" type="button" id="btn-read-answer">🔊 Đọc bản đúng</button>
         <button class="btn-audio-soft" type="button" id="btn-pause-answer">⏸️ Dừng</button>
-        
+        <button class="btn-audio-soft" type="button" id="btn-answer-slow">🐢 Chậm</button>
+        <button class="btn-audio-soft" type="button" id="btn-answer-normal">🙂 Vừa</button>
+        <button class="btn-audio-soft" type="button" id="btn-answer-fast">⚡ Nhanh</button>
       </div>
     `;
   }
@@ -913,11 +941,40 @@ function showTranslationResult(feedbackBox,text,chineseToRead = ""){
   if(chineseToRead){
     const btnRead = document.getElementById("btn-read-answer");
     const btnPause = document.getElementById("btn-pause-answer");
-    const btnResume = document.getElementById("btn-resume-answer");
+    const btnSlow = document.getElementById("btn-answer-slow");
+    const btnNormal = document.getElementById("btn-answer-normal");
+    const btnFast = document.getElementById("btn-answer-fast");
 
-    if(btnRead) btnRead.addEventListener("click",() => speakChineseFrom(chineseToRead,0));
-    if(btnPause) btnPause.addEventListener("click",pauseChineseSpeech);
-    if(btnResume) btnResume.addEventListener("click",resumeChineseSpeech);
+    if(btnRead){
+      btnRead.addEventListener("click",() => {
+        speakChineseFrom(chineseToRead,0);
+      });
+    }
+
+    if(btnPause){
+      btnPause.addEventListener("click",pauseChineseSpeech);
+    }
+
+    if(btnSlow){
+      btnSlow.addEventListener("click",() => {
+        setSpeechRate(0.62);
+        speakChineseFrom(chineseToRead,0);
+      });
+    }
+
+    if(btnNormal){
+      btnNormal.addEventListener("click",() => {
+        setSpeechRate(0.82);
+        speakChineseFrom(chineseToRead,0);
+      });
+    }
+
+    if(btnFast){
+      btnFast.addEventListener("click",() => {
+        setSpeechRate(1.08);
+        speakChineseFrom(chineseToRead,0);
+      });
+    }
   }
 }
 
