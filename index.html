@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學中文 · Học Tiếng Trung</title>
+
+<script src="https://unpkg.com/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+
+<style>
+:root{
+  --paper:#F7F3EA;--paper-deep:#EFE8D8;--ink:#1C1A17;--ink-soft:#4A453D;
+  --seal:#C0392B;--seal-deep:#9C2D21;--gold:#C9A24B;--jade:#2F5D55;
+  --jade-soft:#E4ECE9;--line:#D8CFB8;--shadow:0 8px 24px rgba(28,26,23,.10);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:'Noto Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+  min-height:100vh;
+  background-image:
+    radial-gradient(circle at 10% 5%,rgba(192,57,43,.05),transparent 40%),
+    radial-gradient(circle at 90% 90%,rgba(47,93,85,.06),transparent 40%);
+}
+.hanzi-font{font-family:'Noto Serif SC','Songti SC','STSong','SimSun',serif}
+.app{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+header.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.seal-mark{
+  width:46px;height:46px;border-radius:8px;background:var(--seal);color:#F7F3EA;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  box-shadow:var(--shadow);transform:rotate(-3deg);flex-shrink:0;
+}
+.brand-text h1{margin:0;font-size:20px;letter-spacing:.02em}
+.brand-text p{margin:2px 0 0;font-size:12.5px;color:var(--seal);font-weight:bold}
+nav.tabs{
+  display:flex;gap:6px;background:var(--paper-deep);padding:5px;border-radius:12px;
+  box-shadow:inset 0 0 0 1px var(--line);flex-wrap:wrap;
+}
+nav.tabs button{
+  border:none;background:transparent;color:var(--ink-soft);font-size:13.5px;font-weight:600;
+  padding:9px 14px;border-radius:8px;cursor:pointer;transition:.18s;font-family:inherit;
+}
+nav.tabs button.active{background:var(--ink);color:var(--paper);box-shadow:var(--shadow)}
+nav.tabs button:not(.active):hover{background:rgba(28,26,23,.06)}
+section.view{display:none}
+section.view.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.panel{background:#fff;border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--line)}
+.muted{color:var(--ink-soft)}
+
+/* FLASHCARD */
+.flash-wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
+.card-stage{position:relative;width:100%;max-width:620px;height:590px;perspective:1400px}
+.card{position:absolute;inset:0;border-radius:20px;cursor:pointer;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.4,.2,.2,1)}
+.card.flipped{transform:rotateY(180deg)}
+.card-face{
+  position:absolute;inset:0;border-radius:20px;backface-visibility:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;box-shadow:var(--shadow);border:1px solid var(--line);text-align:center;
+}
+.card-front{
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(28,26,23,.045) 39px,rgba(28,26,23,.045) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(28,26,23,.045) 39px,rgba(28,26,23,.045) 40px),
+    #fff;
+}
+.card-back{background:var(--jade);color:#fff;transform:rotateY(180deg)}
+.card-hanzi{font-size:82px;line-height:1;color:var(--ink);margin-bottom:12px}
+.card-tap-audio{
+  width:44px;height:44px;border-radius:50%;background:var(--paper-deep);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);font-size:18px;transition:.15s;
+}
+.card-tap-audio:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+.action-row{display:flex;gap:12px;margin-top:8px;margin-bottom:16px;align-items:center}
+.btn-mic{
+  background:var(--seal);color:#fff;border:none;padding:10px 20px;border-radius:25px;
+  font-weight:bold;font-size:15px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px;
+  box-shadow:0 4px 10px rgba(192,57,43,.4);
+}
+.btn-mic:hover{background:var(--seal-deep);transform:translateY(-2px)}
+.btn-mic.recording{background:var(--gold);animation:pulse 1.5s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,162,75,.7)}70%{box-shadow:0 0 0 10px rgba(201,162,75,0)}100%{box-shadow:0 0 0 0 rgba(201,162,75,0)}}
+.ai-feedback{
+  width:94%;min-height:40px;padding:12px;border-radius:10px;background:#eef7f5;border:1px solid var(--jade);
+  color:var(--jade);font-size:14px;font-weight:500;display:none;margin-bottom:12px;line-height:1.45;text-align:left;
+}
+.ai-feedback.error{background:#FDF0EE;border-color:var(--seal);color:var(--seal-deep)}
+.mnemonic-front{
+  font-size:16px;line-height:1.65;padding:18px;background:#FDFCF8;border-radius:14px;border:1px dashed var(--gold);
+  color:var(--ink-soft);width:94%;text-align:left;display:flex;flex-direction:column;gap:8px;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.02);overflow-y:auto;max-height:220px;
+}
+.mnemonic-front strong{color:var(--seal)}
+.card-hint{font-size:11px;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;margin-top:14px}
+.card-back .pinyin{font-size:36px;font-weight:700;margin-bottom:14px}
+.card-back .hanviet{font-size:14px;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:20px}
+.card-back .nghia{font-size:28px;line-height:1.4;max-width:430px;font-weight:bold}
+.flash-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.btn-next-card,.btn-prev-card{
+  border:none;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:var(--shadow);transition:transform .15s ease,background .15s ease;
+}
+.btn-next-card{background:var(--jade);color:#fff}
+.btn-prev-card{background:var(--paper-deep);color:var(--ink);border:1px solid var(--line)}
+.btn-next-card:active,.btn-prev-card:active{transform:scale(.96)}
+
+/* QUIZ */
+.quiz-shell{padding:30px}
+.quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:10px}
+.quiz-score{font-size:13px;background:var(--jade-soft);color:var(--jade);padding:6px 12px;border-radius:999px;font-weight:700}
+.qtype-label{font-size:11.5px;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:10px}
+.quiz-question-box{text-align:center;padding:30px 20px 26px;border-radius:16px;background:var(--paper);border:1px solid var(--line);margin-bottom:26px}
+.qmain{font-size:46px;font-family:'Noto Serif SC','SimSun',serif;color:var(--ink)}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt-btn{
+  text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:15px 16px;
+  font-size:15px;cursor:pointer;transition:.15s;color:var(--ink);display:flex;align-items:center;gap:10px;
+}
+.opt-btn .opt-letter{
+  width:24px;height:24px;border-radius:50%;background:var(--paper-deep);color:var(--ink-soft);
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;
+}
+.opt-btn:hover:not(.locked){border-color:var(--gold);background:#FFFBF1}
+.opt-btn.correct{border-color:var(--jade);background:var(--jade-soft);color:var(--jade)}
+.opt-btn.correct .opt-letter{background:var(--jade);color:#fff}
+.opt-btn.wrong{border-color:var(--seal);background:#FDF0EE;color:var(--seal-deep)}
+.opt-btn.wrong .opt-letter{background:var(--seal);color:#fff}
+.opt-btn.locked{cursor:default;pointer-events:none}
+.quiz-footer{display:flex;justify-content:space-between;align-items:center;margin-top:22px}
+.next-btn{
+  background:var(--ink);color:#fff;border:none;padding:11px 22px;border-radius:12px;font-size:14px;
+  font-weight:700;cursor:pointer;opacity:.35;pointer-events:none;transition:.2s;
+}
+.next-btn.ready{opacity:1;pointer-events:auto}
+
+/* WRITER */
+.writer-shell{padding:28px;display:flex;flex-direction:column;align-items:center;gap:20px}
+.writer-select{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:720px}
+.writer-select button{
+  font-family:'Noto Serif SC','SimSun',serif;font-size:20px;width:42px;height:42px;border-radius:10px;
+  border:1.5px solid var(--line);background:#fff;cursor:pointer;color:var(--ink);transition:.15s;
+}
+.writer-select button.active{background:var(--seal);border-color:var(--seal);color:#fff}
+.writer-stage{
+  position:relative;width:320px;height:320px;
+  background:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px),#fff;
+  background-size:100% 100%,100% 100%;border:2px solid var(--ink);border-radius:12px;box-shadow:var(--shadow);
+  cursor:crosshair;touch-action:none;
+}
+#hanzi-target-container{position:absolute;inset:0;z-index:10;width:100%;height:100%}
+.writer-meta{text-align:center}
+.writer-meta .wm-pinyin{font-size:24px;font-weight:700;color:var(--ink)}
+.writer-meta .wm-hanviet{font-size:12px;text-transform:uppercase;color:var(--gold);letter-spacing:.06em;margin:2px 0 6px;font-weight:700}
+.writer-controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.writer-controls button{
+  border:1px solid var(--line);background:#fff;padding:9px 16px;border-radius:10px;font-size:13px;
+  font-weight:600;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:7px;transition:.15s;
+}
+.writer-controls button:hover{border-color:var(--jade);color:var(--jade)}
+.writer-controls button.primary{background:var(--jade);border-color:var(--jade);color:#fff}
+.writer-controls button.quiz-active{background:var(--gold);border-color:var(--gold);color:#fff}
+
+/* TRANSLATE */
+.translate-wrap{display:grid;grid-template-columns:1fr;gap:24px}
+.translate-panel{padding:30px}
+.translate-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.translate-head h2{margin:0;font-size:19px;color:var(--jade)}
+.tag{
+  background:var(--paper-deep);color:var(--ink-soft);font-size:11px;padding:4px 10px;border-radius:99px;
+  font-weight:bold;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;
+}
+.source-text{
+  background:#FDFCF8;border:1px dashed var(--gold);border-radius:14px;padding:24px;margin-bottom:16px;
+  font-size:20px;line-height:2;color:var(--ink);min-height:118px;
+}
+.source-text rt{color:var(--gold);font-family:'Noto Sans',sans-serif;font-size:12px}
+.vn-text{font-size:18px;line-height:1.8;font-weight:500}
+.source-pinyin{
+  margin-top:10px;padding-top:10px;border-top:1px solid rgba(201,162,75,.35);color:var(--gold);
+  font-size:15px;line-height:1.6;font-family:'Noto Sans',sans-serif;
+}
+textarea.translate-input{
+  width:100%;min-height:165px;border-radius:14px;border:1.5px solid var(--line);padding:16px;
+  font-family:inherit;font-size:17px;resize:vertical;margin-bottom:14px;background:var(--paper);color:var(--ink);transition:.2s;
+}
+textarea.translate-input:focus{outline:none;border-color:var(--jade);background:#fff;box-shadow:0 0 0 3px var(--jade-soft)}
+.translate-actions,.tts-controls,.answer-audio-wrap{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn-check,.btn-generate,.btn-audio-text,.btn-audio-soft{
+  color:#fff;border:none;padding:12px 22px;border-radius:10px;font-size:14.5px;font-weight:bold;
+  cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-check{background:var(--ink)}
+.btn-generate{background:var(--seal)}
+.btn-audio-text{background:var(--gold)}
+.btn-audio-soft{background:var(--jade)}
+.btn-check:hover,.btn-generate:hover,.btn-audio-text:hover,.btn-audio-soft:hover{
+  transform:translateY(-2px);filter:brightness(.96);
+}
+.btn-check:disabled,.btn-generate:disabled,.btn-audio-text:disabled,.btn-audio-soft:disabled{
+  background:var(--line);cursor:not-allowed;transform:none;
+}
+.tts-panel{margin-top:14px;padding:14px;border-radius:14px;background:#FDFCF8;border:1px solid var(--line)}
+.tts-title{font-size:13px;font-weight:800;color:var(--jade);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+.tts-status{margin-top:10px;font-size:12.5px;color:var(--ink-soft)}
+.feedback-box{margin-top:16px;padding:16px;border-radius:12px;font-size:15px;line-height:1.7;display:none}
+.feedback-box.active{display:block}
+.feedback-box.loading{background:var(--paper-deep);color:var(--ink-soft);border:1px solid var(--line)}
+.feedback-box.result{background:var(--jade-soft);color:var(--ink);border:1px solid var(--jade)}
+.feedback-box.error{background:#FDF0EE;color:var(--seal-deep);border:1px solid var(--seal)}
+.feedback-box strong{color:var(--jade)}
+.answer-audio-wrap{margin-top:12px;padding-top:12px;border-top:1px solid rgba(47,93,85,.2)}
+
+@media(max-width:720px){
+  .app{padding:22px 14px 60px}
+  .card-stage{height:560px}
+  .card-hanzi{font-size:64px}
+  .mnemonic-front{max-height:230px;font-size:15px}
+  .quiz-options{grid-template-columns:1fr}
+  .source-text{font-size:18px;padding:18px}
+  textarea.translate-input{min-height:145px}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <div class="seal-mark hanzi-font">學</div>
+    <div class="brand-text">
+      <h1>學中文 · Học chữ & Ôn tập chữ</h1>
+      <p>Flashcard, trắc nghiệm, luyện viết, dịch đoạn AI</p>
+    </div>
+  </div>
+
+  <nav class="tabs" id="mainTabs">
+    <button class="tab-btn active" data-view="flash">Flashcard & Luyện âm</button>
+    <button class="tab-btn" data-view="quiz">Trắc nghiệm</button>
+    <button class="tab-btn" data-view="writer">Luyện nét chữ</button>
+    <button class="tab-btn" data-view="translate">Dịch đoạn</button>
+  </nav>
+</header>
+
+<section class="view active" id="view-flash">
+  <div class="flash-wrap">
+    <div class="card-stage" id="cardStage"></div>
+    <div class="flash-actions">
+      <button class="btn-prev-card" id="btnPrevFlash">← Quay lại</button>
+      <button class="btn-next-card" id="btnNextFlash">Chuyển từ tiếp theo ➔</button>
+    </div>
+    <div class="muted" style="font-size:13px;">Bấm Micro để AI chấm điểm phát âm. Nhấp vào vùng trống để lật thẻ.</div>
+  </div>
+</section>
+
+<section class="view" id="view-quiz">
+  <div class="panel quiz-shell">
+    <div class="quiz-top">
+      <div class="qtype-label">Hán tự → Nghĩa</div>
+      <div class="quiz-score" id="quizScoreLabel">Điểm: 0</div>
+    </div>
+    <div id="quizBody"></div>
+  </div>
+</section>
+
+<section class="view" id="view-writer">
+  <div class="panel writer-shell">
+    <div class="writer-select" id="writerCharSelect"></div>
+    <div class="writer-meta">
+      <div class="wm-pinyin" id="wmPinyin">—</div>
+      <div class="wm-hanviet" id="wmHanviet">—</div>
+      <div class="muted" style="font-size:13px;color:var(--seal);margin-top:5px;" id="writerInstruction">
+        💡 Bấm "Tự viết" sau đó dùng chuột/tay vẽ lên ô vuông để kiểm tra nét.
+      </div>
+    </div>
+    <div class="writer-stage" id="writerStage">
+      <div id="hanzi-target-container"></div>
+    </div>
+    <div class="writer-controls">
+      <button id="btnAnimate" class="primary">▶ Xem máy viết</button>
+      <button id="btnQuiz">✎ Tự viết kiểm tra</button>
+      <button id="btnHint">💡 Gợi ý nét tiếp theo</button>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-translate">
+  <div class="translate-wrap">
+
+    <div class="panel translate-panel">
+      <div class="translate-head">
+        <h2>Đoạn 1: Dịch sang Tiếng Việt</h2>
+        <span class="tag">Trung → Việt</span>
+      </div>
+
+      <div class="source-text hanzi-font" id="source-cn2vn"
+           data-text="这是谁？这是我的同屋，中村。那是他的汉语课本和词典。我的书就是这本杂志。">
+        <ruby>这<rt>zhè</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>谁<rt>shéi</rt></ruby>？
+        <ruby>这<rt>zhè</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>我<rt>wǒ</rt></ruby><ruby>的<rt>de</rt></ruby><ruby>同<rt>tóng</rt></ruby><ruby>屋<rt>wū</rt></ruby>，
+        <ruby>中<rt>zhōng</rt></ruby><ruby>村<rt>cūn</rt></ruby>。<br>
+        <ruby>那<rt>nà</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>他<rt>tā</rt></ruby><ruby>的<rt>de</rt></ruby><ruby>汉<rt>hàn</rt></ruby><ruby>语<rt>yǔ</rt></ruby><ruby>课<rt>kè</rt></ruby><ruby>本<rt>běn</rt></ruby><ruby>和<rt>hé</rt></ruby><ruby>词<rt>cí</rt></ruby><ruby>典<rt>diǎn</rt></ruby>。<br>
+        <ruby>我<rt>wǒ</rt></ruby><ruby>的<rt>de</rt></ruby><ruby>书<rt>shū</rt></ruby><ruby>就<rt>jiù</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>这<rt>zhè</rt></ruby><ruby>本<rt>běn</rt></ruby><ruby>杂<rt>zá</rt></ruby><ruby>志<rt>zhì</rt></ruby>。
+      </div>
+
+      <textarea id="input-cn2vn" class="translate-input" placeholder="Trò hãy gõ bản dịch Tiếng Việt vào đây..."></textarea>
+
+      <div class="translate-actions">
+        <button class="btn-check" id="btn-cn2vn" onclick="checkTranslation1()">✨ Chấm điểm</button>
+        <button class="btn-generate" id="btn-generate-cn" onclick="generateNewText('cn2vn')">🔄 Tạo đề mới bằng AI</button>
+      </div>
+
+      <div class="tts-panel">
+        <div class="tts-title">Đọc tiếng Trung</div>
+        <div class="tts-controls">
+          <button class="btn-audio-text" onclick="readChineseSource()">🔊 Đọc</button>
+          <button class="btn-audio-soft" onclick="pauseChineseSpeech()">⏸️ Dừng</button>
+          
+        </div>
+        <div class="tts-status" id="tts-status">Trạng thái: Sẵn sàng</div>
+      </div>
+
+      <div id="feedback-cn2vn" class="feedback-box"></div>
+    </div>
+
+    <div class="panel translate-panel">
+      <div class="translate-head">
+        <h2>Đoạn 2: Dịch sang Tiếng Trung</h2>
+        <span class="tag">Việt → Trung</span>
+      </div>
+
+      <div class="source-text vn-text" id="source-vn2cn"
+           data-text="Kia là xe của ai? Đó là xe của bạn bè tôi. Đây không phải là điện thoại của tôi, đây là ví tiền của bạn gái tôi.">
+        Kia là xe của ai? Đó là xe của bạn bè tôi. Đây không phải là điện thoại của tôi, đây là ví tiền của bạn gái tôi.
+      </div>
+
+      <textarea id="input-vn2cn" class="translate-input hanzi-font" style="font-size:18px;" placeholder="Trò hãy gõ bản dịch Tiếng Trung Hán tự vào đây..."></textarea>
+
+      <div class="translate-actions">
+        <button class="btn-check" id="btn-vn2cn" onclick="checkTranslation2()">✨ Chấm điểm</button>
+        <button class="btn-generate" id="btn-generate-vn" onclick="generateNewText('vn2cn')">🔄 Tạo đề mới bằng AI</button>
+      </div>
+
+      <div id="feedback-vn2cn" class="feedback-box"></div>
+    </div>
+
+  </div>
+</section>
+
+</div>
+
+<script>
+/* API GEMINI */
+const GEMINI_API_KEY = "";
+
+const GEMINI_MODELS = [
+  "gemini-3.1-flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-2.0-flash-lite",
+  "gemini-2.0-flash"
+];
+
+let WORKING_MODEL = null;
+
+function escapeHtml(text){
+  return String(text)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function formatAIText(text){
+  let safeText = escapeHtml(text);
+  safeText = safeText.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
+  safeText = safeText.replace(/\n/g,"<br>");
+  return safeText;
+}
+
+async function callOneGeminiModel(model,prompt,maxOutputTokens=220){
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+  const response = await fetch(url,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      contents:[{parts:[{text:prompt}]}],
+      generationConfig:{temperature:.35,maxOutputTokens:maxOutputTokens}
+    })
+  });
+
+  const data = await response.json();
+
+  if(!response.ok){
+    throw new Error(data?.error?.message || `Không gọi được model ${model}.`);
+  }
+
+  const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if(!aiText){
+    throw new Error(`Model ${model} không trả về nội dung.`);
+  }
+
+  return aiText.trim();
+}
+
+async function callGeminiText(prompt,maxOutputTokens=220){
+  if(!GEMINI_API_KEY){
+    throw new Error("Chưa điền GEMINI_API_KEY.");
+  }
+
+  const modelsToTry = WORKING_MODEL
+    ? [WORKING_MODEL,...GEMINI_MODELS.filter(m => m !== WORKING_MODEL)]
+    : GEMINI_MODELS;
+
+  const errors = [];
+
+  for(const model of modelsToTry){
+    try{
+      const text = await callOneGeminiModel(model,prompt,maxOutputTokens);
+      WORKING_MODEL = model;
+      return text;
+    }catch(error){
+      errors.push(`${model}: ${error.message}`);
+    }
+  }
+
+  throw new Error(errors.join("\n\n"));
+}
+
+/* DATA */
+const VOCAB = [
+  {id:1,hanzi:"老师",pinyin:"lǎoshī",hanviet:"lão sư",nghia:"giáo viên",mnemonic:"<strong>老 (Lão):</strong> Lão (耂) + Chủy (匕 - thìa). Người già kinh nghiệm được bón hầu hạ.<br><strong>师 (Sư):</strong> Đao (刂 - kiếm) + Cân (巾 - khăn). Thầy giáo vừa nghiêm khắc như kiếm, vừa ân cần như khăn lau."},
+  {id:2,hanzi:"学生",pinyin:"xuéshēng",hanviet:"học sinh",nghia:"học sinh; sinh viên",mnemonic:"<strong>学 (Học):</strong> Miên (冖 - mái nhà) + Tử (子 - đứa trẻ). Trẻ em dưới mái trường học tập toát mồ hôi.<br><strong>生 (Sinh):</strong> Mầm cây vươn lên mặt đất (一). Học sinh là mầm non được rèn giũa."},
+  {id:3,hanzi:"留学生",pinyin:"liú xué shēng",hanviet:"lưu học sinh",nghia:"du học sinh",mnemonic:"<strong>留 (Lưu):</strong> Đao (刀) + Điền (田). Mang dao khai khẩn ruộng đất xứ lạ, quyết lưu lại học tập."},
+  {id:4,hanzi:"这",pinyin:"zhè",hanviet:"giá",nghia:"đây, này",mnemonic:"<strong>这:</strong> Quai xước (辶) + Văn (文). Bước chân đi đến ngay chỗ đây để xem văn tự."},
+  {id:5,hanzi:"那",pinyin:"nà",hanviet:"na",nghia:"kia, đó",mnemonic:"<strong>那:</strong> Có bộ Ấp (阝 - vùng đất). Đưa tay chỉ về vùng đất xa xôi tận đằng kia."},
+  {id:6,hanzi:"谁",pinyin:"shéi / shuí",hanviet:"thùy",nghia:"ai",mnemonic:"<strong>谁:</strong> Ngôn (讠 - lời nói) + Truy (隹 - con chim). Cất lời hỏi xem con chim đó là của ai."},
+  {id:7,hanzi:"书",pinyin:"shū",hanviet:"thư",nghia:"sách",mnemonic:"<strong>书:</strong> Hình ảnh tượng hình chiếc giá sách có thanh ngang và cây bút đang cắm vào."},
+  {id:8,hanzi:"同屋",pinyin:"tóngwū",hanviet:"đồng ốc",nghia:"bạn cùng phòng",mnemonic:"<strong>同:</strong> Dưới một mái vòm (冂) chung tiếng nói (口).<br><strong>屋:</strong> Đến (至) dưới mái hiên (尸) chia sẻ căn phòng."},
+  {id:9,hanzi:"汉语",pinyin:"hànyǔ",hanviet:"hán ngữ",nghia:"tiếng Hán",mnemonic:"<strong>汉:</strong> Thủy (氵). Người Hán quanh sông Hán.<br><strong>语:</strong> Ngôn (讠) + Ngô (吾 - tôi). Lời nói của tôi cất lên thành ngôn ngữ."},
+  {id:10,hanzi:"课本",pinyin:"kèběn",hanviet:"khóa bản",nghia:"giáo trình, sách giáo khoa",mnemonic:"<strong>课:</strong> Lời nói (讠) mang lại kết quả (果).<br><strong>本:</strong> Cây gỗ (木) cắm rễ (一). Sách vở cơ bản làm từ gỗ."},
+  {id:11,hanzi:"词典",pinyin:"cídiǎn",hanviet:"từ điển",nghia:"từ điển",mnemonic:"<strong>词:</strong> Lời nói (讠) sắp xếp có quy tắc (司).<br><strong>典:</strong> Sách quý đặt nghiêm trang trên giá đỡ (八)."},
+  {id:12,hanzi:"就是",pinyin:"jiùshì",hanviet:"tựu thị",nghia:"chính là",mnemonic:"<strong>就:</strong> Tới kinh đô (京).<br><strong>是:</strong> Mặt trời (日) soi bước chân (疋), khẳng định chính là sự thật."},
+  {id:13,hanzi:"杂志",pinyin:"zázhì",hanviet:"tạp chí",nghia:"tạp chí",mnemonic:"<strong>杂:</strong> Chín (九) loại cây (木) mọc lộn xộn.<br><strong>志:</strong> Kẻ sĩ (士) để tâm (心) ghi chép lại việc rối rắm đó."},
+  {id:14,hanzi:"音乐",pinyin:"yīnyuè",hanviet:"âm nhạc",nghia:"âm nhạc",mnemonic:"<strong>音:</strong> Đứng (立) dưới mặt trời (日) hát ra âm thanh.<br><strong>乐:</strong> Tượng hình gảy khúc nhạc."},
+  {id:15,hanzi:"朋友",pinyin:"péngyou",hanviet:"bằng hữu",nghia:"bạn bè",mnemonic:"<strong>朋:</strong> Hai vầng trăng (月) song song bình đẳng.<br><strong>友:</strong> Hai bàn tay phải (又) nắm lấy nhau tương trợ."},
+  {id:16,hanzi:"男",pinyin:"nán",hanviet:"nam",nghia:"nam",mnemonic:"<strong>男:</strong> Điền (田 - ruộng) + Lực (力 - cày). Trụ cột gia đình dùng sức cày ruộng."},
+  {id:17,hanzi:"女",pinyin:"nǚ",hanviet:"nữ",nghia:"nữ",mnemonic:"<strong>女:</strong> Tượng hình người phụ nữ quỳ gối, vắt chéo chân, khoanh tay yểu điệu."},
+  {id:18,hanzi:"男朋友",pinyin:"nán péngyou",hanviet:"nam bằng hữu",nghia:"bạn trai",mnemonic:"Chữ 男 (Nam) + 朋友 (Bằng hữu)."},
+  {id:19,hanzi:"女朋友",pinyin:"nǚ péngyou",hanviet:"nữ bằng hữu",nghia:"bạn gái",mnemonic:"Chữ 女 (Nữ) + 朋友 (Bằng hữu)."},
+  {id:20,hanzi:"中村",pinyin:"Zhōngcūn",hanviet:"trung thôn",nghia:"Nakamura",mnemonic:"<strong>中:</strong> Ở giữa.<br><strong>村:</strong> Cây (木) nhỏ (寸) ở thôn quê. Nakamura sống giữa thôn."},
+  {id:21,hanzi:"手机",pinyin:"shǒujī",hanviet:"thủ cơ",nghia:"điện thoại di động",mnemonic:"<strong>手:</strong> Bàn tay.<br><strong>机:</strong> Gỗ (木) + Bàn nhỏ (几). Cỗ máy móc thu nhỏ cầm trên tay."},
+  {id:22,hanzi:"电话",pinyin:"diànhuà",hanviet:"điện thoại",nghia:"điện thoại",mnemonic:"<strong>电:</strong> Điền (田) có tia sét xẹt qua tạo điện.<br><strong>话:</strong> Ngôn (讠) + Lưỡi (舌). Lưỡi phát lời nói truyền qua điện."},
+  {id:23,hanzi:"车",pinyin:"chē",hanviet:"xa",nghia:"xe",mnemonic:"<strong>车:</strong> Tượng hình chiếc xe bò nhìn từ trên xuống."},
+  {id:24,hanzi:"钱包",pinyin:"qiánbāo",hanviet:"tiền bao",nghia:"ví tiền",mnemonic:"<strong>钱:</strong> Kim (钅). Tiền đúc bằng kim loại.<br><strong>包:</strong> Bao bọc (勹) sinh mệnh (巳). Ví là cái túi bọc chặt tiền quý giá."}
+];
+
+const DUMMY_OPTIONS = ["giáo viên","xin chào","tạm biệt","cảm ơn","bác sĩ","kỹ sư","xe máy","máy tính","cửa hàng","bệnh viện","trường học","quần áo","đồ ăn"];
+
+/* TABS */
+const tabBtns = document.querySelectorAll(".tab-btn");
+const views = {
+  flash:document.getElementById("view-flash"),
+  quiz:document.getElementById("view-quiz"),
+  writer:document.getElementById("view-writer"),
+  translate:document.getElementById("view-translate")
+};
+
+tabBtns.forEach(btn => {
+  btn.addEventListener("click",() => {
+    const viewName = btn.dataset.view;
+    const targetView = views[viewName];
+
+    if(!targetView){
+      alert("Lỗi: Không tìm thấy phần giao diện " + viewName);
+      return;
+    }
+
+    tabBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    Object.values(views).forEach(v => {
+      if(v) v.classList.remove("active");
+    });
+
+    targetView.classList.add("active");
+
+    if(viewName === "writer") initWriterIfNeeded();
+    if(viewName === "quiz") startQuiz();
+  });
+});
+
+/* FLASHCARD */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+
+if(SpeechRecognition){
+  recognition = new SpeechRecognition();
+  recognition.lang = "zh-CN";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+}
+
+async function scorePronunciation(targetWord,userSpokenText){
+  const prompt = `
+Bạn là giáo viên dạy tiếng Trung.
+
+Từ cần đọc: "${targetWord}"
+Hệ thống nghe được học sinh đọc: "${userSpokenText}"
+
+Chấm phát âm từ 0 đến 100.
+Chỉ trả lời đúng 1 dòng:
+[Điểm/100] - [Nhận xét rất ngắn bằng tiếng Việt]
+`;
+
+  try{
+    const text = await callGeminiText(prompt,100);
+    return `SUCCESS|${text}`;
+  }catch(error){
+    return `ERROR|⚠️ Lỗi API: ${error.message}`;
+  }
+}
+
+let idx = 0;
+
+function renderFlashcard(){
+  const item = VOCAB[idx];
+  const stage = document.getElementById("cardStage");
+
+  stage.innerHTML = `
+    <div class="card" id="flipCard">
+      <div class="card-face card-front">
+        <div class="card-hanzi hanzi-font">${item.hanzi}</div>
+        <div class="action-row">
+          <div class="card-tap-audio" id="cardAudioBtn" title="Nghe mẫu">🔊</div>
+          <button class="btn-mic" id="btnMic">🎤 Chấm điểm</button>
+        </div>
+        <div class="ai-feedback" id="aiFeedback"></div>
+        <div class="mnemonic-front">${item.mnemonic}</div>
+        <div class="card-hint">Bấm vào khoảng trắng để lật thẻ</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="pinyin">${item.pinyin}</div>
+        <div class="hanviet">Hán Việt: ${item.hanviet}</div>
+        <div class="nghia">${item.nghia}</div>
+      </div>
+    </div>
+  `;
+
+  const card = document.getElementById("flipCard");
+
+  card.addEventListener("click",e => {
+    if(
+      e.target.id === "cardAudioBtn" ||
+      e.target.id === "btnMic" ||
+      e.target.closest(".ai-feedback") ||
+      e.target.closest(".mnemonic-front")
+    ){
+      return;
+    }
+
+    card.classList.toggle("flipped");
+  });
+
+  document.getElementById("cardAudioBtn").addEventListener("click",e => {
+    e.stopPropagation();
+    speak(item.hanzi);
+  });
+
+  const btnMic = document.getElementById("btnMic");
+  const aiFeedback = document.getElementById("aiFeedback");
+
+  btnMic.addEventListener("click",e => {
+    e.stopPropagation();
+
+    if(!recognition){
+      alert("Trình duyệt không hỗ trợ thu âm.");
+      return;
+    }
+
+    btnMic.classList.add("recording");
+    btnMic.innerHTML = "🎙️ Đang nghe...";
+    aiFeedback.style.display = "none";
+    aiFeedback.className = "ai-feedback";
+
+    recognition.start();
+
+    recognition.onresult = async event => {
+      const userSpokenText = event.results[0][0].transcript;
+
+      btnMic.classList.remove("recording");
+      btnMic.innerHTML = "⏳ AI đang chấm...";
+
+      const responseStr = await scorePronunciation(item.hanzi,userSpokenText);
+      const [status,resultText] = responseStr.split("|");
+
+      if(status === "ERROR"){
+        aiFeedback.classList.add("error");
+        aiFeedback.innerHTML = `
+          ${escapeHtml(resultText)}
+          <br>
+          <span style="font-size:12px;color:#888;margin-top:4px;display:block;">
+            Ngài vừa đọc thành: <b>${escapeHtml(userSpokenText)}</b>
+          </span>
+        `;
+      }else{
+        aiFeedback.innerHTML = `
+          <strong>Đánh giá:</strong> ${formatAIText(resultText)}
+          <br>
+          <span style="font-size:12px;color:#666;margin-top:4px;display:block;">
+            Ngài vừa đọc thành: <b>${escapeHtml(userSpokenText)}</b>
+          </span>
+        `;
+      }
+
+      aiFeedback.style.display = "block";
+      btnMic.innerHTML = "🎤 Thử lại";
+    };
+
+    recognition.onerror = () => {
+      btnMic.classList.remove("recording");
+      btnMic.innerHTML = "🎤 Lỗi mic/Thử lại";
+      alert("Lỗi thu âm. Ngài nhớ cấp quyền dùng Micro trên trình duyệt nhé!");
+    };
+  });
+}
+
+document.getElementById("btnNextFlash").addEventListener("click",() => {
+  idx = (idx + 1) % VOCAB.length;
+  renderFlashcard();
+});
+
+document.getElementById("btnPrevFlash").addEventListener("click",() => {
+  idx = (idx - 1 + VOCAB.length) % VOCAB.length;
+  renderFlashcard();
+});
+
+function speak(text){
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "zh-CN";
+  utterance.rate = .82;
+  window.speechSynthesis.speak(utterance);
+}
+
+renderFlashcard();
+
+/* QUIZ */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1;i > 0;i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+let quizScore = 0;
+let quizIdx = 0;
+let quizQueue = [];
+
+function startQuiz(){
+  quizQueue = shuffle([...VOCAB]);
+  quizIdx = 0;
+  quizScore = 0;
+  document.getElementById("quizScoreLabel").textContent = "Điểm: 0";
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion(){
+  if(quizIdx >= quizQueue.length){
+    document.getElementById("quizBody").innerHTML = `
+      <div style="text-align:center;padding:40px 0;">
+        <h2>Hoàn thành!</h2>
+        <p>Điểm: ${quizScore} / ${quizQueue.length}</p>
+        <button class="btn-next-card" onclick="startQuiz()">↻ Làm lại</button>
+      </div>
+    `;
+    return;
+  }
+
+  const item = quizQueue[quizIdx];
+  const qbody = document.getElementById("quizBody");
+  const options = shuffle([item.nghia,...shuffle(DUMMY_OPTIONS).slice(0,3)]);
+  const letters = ["A","B","C","D"];
+
+  qbody.innerHTML = `
+    <div class="quiz-question-box">
+      <div class="qmain hanzi-font">${item.hanzi}</div>
+      <button style="margin-top:10px;border:1px solid var(--line);border-radius:20px;padding:5px 15px;background:#fff;cursor:pointer;" onclick="speak('${item.hanzi}')">
+        🔊 Nghe âm chuẩn
+      </button>
+    </div>
+    <div class="quiz-options" id="quizOptions">
+      ${options.map((opt,i) => `
+        <button class="opt-btn" data-correct="${opt === item.nghia}">
+          <span class="opt-letter">${letters[i]}</span>
+          <span style="font-size:15px;">${opt}</span>
+        </button>
+      `).join("")}
+    </div>
+    <div class="quiz-footer">
+      <span class="muted" id="quizFeedback"></span>
+      <button class="next-btn" id="quizNextBtn">Câu tiếp theo ➔</button>
+    </div>
+  `;
+
+  document.querySelectorAll("#quizOptions .opt-btn").forEach(btn => {
+    btn.addEventListener("click",() => {
+      if(btn.classList.contains("locked")) return;
+
+      const isCorrect = btn.dataset.correct === "true";
+      if(isCorrect) quizScore++;
+
+      document.getElementById("quizScoreLabel").textContent = `Điểm: ${quizScore}`;
+
+      document.querySelectorAll("#quizOptions .opt-btn").forEach(b => {
+        b.classList.add("locked");
+        if(b.dataset.correct === "true") b.classList.add("correct");
+        else if(b === btn) b.classList.add("wrong");
+      });
+
+      const fb = document.getElementById("quizFeedback");
+      fb.textContent = isCorrect ? "✓ Chính xác!" : "✕ Chưa đúng.";
+      fb.style.color = isCorrect ? "var(--jade)" : "var(--seal)";
+
+      document.getElementById("quizNextBtn").classList.add("ready");
+    });
+  });
+
+  document.getElementById("quizNextBtn").addEventListener("click",() => {
+    quizIdx++;
+    renderQuizQuestion();
+  });
+}
+
+/* WRITER */
+let writerInitialized = false;
+let hwInstance = null;
+
+function initWriterIfNeeded(){
+  if(writerInitialized) return;
+
+  writerInitialized = true;
+
+  const select = document.getElementById("writerCharSelect");
+  const charSet = [];
+  const seen = new Set();
+
+  VOCAB.forEach(v => {
+    [...v.hanzi].forEach(ch => {
+      if(ch.trim() !== "" && !/[a-zA-Z]/.test(ch) && !seen.has(ch)){
+        seen.add(ch);
+        charSet.push({
+          char:ch,
+          pinyin:v.pinyin,
+          hanviet:v.hanviet
+        });
+      }
+    });
+  });
+
+  charSet.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "hanzi-font";
+    b.textContent = c.char;
+
+    b.addEventListener("click",() => {
+      select.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      loadChar(c);
+    });
+
+    select.appendChild(b);
+  });
+
+  function loadChar(c){
+    document.getElementById("wmPinyin").textContent = "Chữ: " + c.char;
+    document.getElementById("wmHanviet").textContent = "Trích từ: " + c.hanviet.toUpperCase();
+
+    document.getElementById("btnQuiz").classList.remove("quiz-active");
+    document.getElementById("writerInstruction").innerHTML = '💡 Bấm <b>"✎ Tự viết"</b> sau đó dùng chuột/tay vẽ lên ô vuông.';
+
+    const container = document.getElementById("hanzi-target-container");
+    container.innerHTML = "";
+
+    try{
+      hwInstance = HanziWriter.create("hanzi-target-container",c.char,{
+        width:320,
+        height:320,
+        padding:18,
+        strokeColor:"#1C1A17",
+        radicalColor:"#C0392B",
+        outlineColor:"#D8CFB8",
+        drawingColor:"#2F5D55",
+        showOutline:true,
+        showCharacter:false,
+        delayBetweenStrokes:250,
+        charDataLoader:function(char,onComplete){
+          fetch("https://unpkg.com/hanzi-writer-data@2.0.1/" + char + ".json")
+            .then(res => {
+              if(!res.ok) throw new Error();
+              return res.json();
+            })
+            .then(onComplete)
+            .catch(() => {
+              container.innerHTML = `
+                <div style="padding:20px;text-align:center;color:var(--seal);">
+                  Dữ liệu chữ này chưa có sẵn.
+                </div>
+              `;
+            });
+        }
+      });
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  document.getElementById("btnAnimate").addEventListener("click",() => {
+    if(hwInstance){
+      hwInstance.cancelQuiz();
+      document.getElementById("btnQuiz").classList.remove("quiz-active");
+      document.getElementById("writerInstruction").innerHTML = "Đang xem máy viết mẫu...";
+      hwInstance.animateCharacter();
+    }
+  });
+
+  document.getElementById("btnQuiz").addEventListener("click",() => {
+    if(hwInstance){
+      document.getElementById("btnQuiz").classList.add("quiz-active");
+      document.getElementById("writerInstruction").innerHTML = "✏️ <b>Đang ở chế độ Tự Viết:</b> Hãy vẽ nét lên ô vuông ở dưới!";
+
+      hwInstance.quiz({
+        onMistake:() => {
+          document.getElementById("writerInstruction").innerHTML = "❌ Sai thứ tự hoặc chiều nét!";
+        },
+        onCorrectStroke:() => {
+          document.getElementById("writerInstruction").innerHTML = "✅ Nét chuẩn xác!";
+        },
+        onComplete:() => {
+          document.getElementById("writerInstruction").innerHTML = "🎉 Đã viết xong!";
+          document.getElementById("btnQuiz").classList.remove("quiz-active");
+        }
+      });
+    }
+  });
+
+  document.getElementById("btnHint").addEventListener("click",() => {
+    if(hwInstance) hwInstance.highlightStroke(0);
+  });
+
+  if(charSet.length){
+    select.querySelector("button").classList.add("active");
+    loadChar(charSet[0]);
+  }
+}
+
+/* TRANSLATE + TTS */
+let currentSpeechText = "";
+let currentSpeechOffset = 0;
+let currentUtterance = null;
+let isSpeechPausedByUser = false;
+let speechRate = .82;
+
+function setTtsStatus(text){
+  const el = document.getElementById("tts-status");
+  if(el) el.textContent = "Trạng thái: " + text;
+}
+
+function speakChineseFrom(text, offset = 0){
+  const fullText = String(text || "").trim();
+
+  if(!fullText){
+    alert("Chưa có nội dung tiếng Trung để đọc.");
+    return;
+  }
+
+  if(!window.speechSynthesis){
+    alert("Trình duyệt này không hỗ trợ đọc giọng nói.");
+    return;
+  }
+
+  currentSpeechText = fullText;
+  currentSpeechOffset = Math.max(0, Math.min(offset, fullText.length));
+  isSpeechPausedByUser = false;
+
+  window.speechSynthesis.cancel();
+
+  const remainingText = fullText.slice(currentSpeechOffset);
+
+  currentUtterance = new SpeechSynthesisUtterance(remainingText);
+  currentUtterance.lang = "zh-CN";
+  currentUtterance.rate = speechRate;
+  currentUtterance.pitch = 1;
+
+  currentUtterance.onboundary = event => {
+    if(typeof event.charIndex === "number"){
+      currentSpeechOffset = currentSpeechOffset + event.charIndex;
+    }
+  };
+
+  currentUtterance.onend = () => {
+    if(!isSpeechPausedByUser){
+      currentSpeechOffset = 0;
+      setTtsStatus("Đã đọc xong");
+    }
+  };
+
+  currentUtterance.onerror = () => {
+    setTtsStatus("Dừng");
+  };
+
+  setTtsStatus("Đang đọc");
+  window.speechSynthesis.speak(currentUtterance);
+}
+
+function pauseChineseSpeech(){
+  if(!window.speechSynthesis) return;
+
+  if(window.speechSynthesis.speaking){
+    isSpeechPausedByUser = true;
+    window.speechSynthesis.cancel();
+    setTtsStatus("Đã tạm dừng, bấm Tiếp tục để đọc tiếp");
+  }
+}
+
+
+function readChineseSource(){
+  const el = document.getElementById("source-cn2vn");
+
+  if(!el){
+    alert("Không tìm thấy đoạn tiếng Trung.");
+    return;
+  }
+
+  const text = el.dataset.text || el.innerText || "";
+  speakChineseFrom(text,0);
+}
+
+function showTranslationLoading(feedbackBox,message = "⏳ đang xử lý..."){
+  feedbackBox.className = "feedback-box active loading";
+  feedbackBox.innerHTML = message;
+}
+
+function showTranslationResult(feedbackBox,text,chineseToRead = ""){
+  feedbackBox.className = "feedback-box active result";
+
+  let html = formatAIText(text);
+
+  if(chineseToRead){
+    html += `
+      <div class="answer-audio-wrap">
+        <button class="btn-audio-text" type="button" id="btn-read-answer">🔊 Đọc bản đúng</button>
+        <button class="btn-audio-soft" type="button" id="btn-pause-answer">⏸️ Dừng</button>
+        
+      </div>
+    `;
+  }
+
+  feedbackBox.innerHTML = html;
+
+  if(chineseToRead){
+    const btnRead = document.getElementById("btn-read-answer");
+    const btnPause = document.getElementById("btn-pause-answer");
+    const btnResume = document.getElementById("btn-resume-answer");
+
+    if(btnRead) btnRead.addEventListener("click",() => speakChineseFrom(chineseToRead,0));
+    if(btnPause) btnPause.addEventListener("click",pauseChineseSpeech);
+    if(btnResume) btnResume.addEventListener("click",resumeChineseSpeech);
+  }
+}
+
+function showTranslationError(feedbackBox,error){
+  feedbackBox.className = "feedback-box active error";
+  feedbackBox.innerHTML = `
+    ❌ Không gọi được AI.<br><br>
+    <small>${formatAIText(error.message)}</small>
+  `;
+}
+
+function extractLineValue(text,label){
+  const regex = new RegExp(label + "\\s*:\\s*([\\s\\S]*?)(?=\\n[A-ZÀ-Ỹa-zà-ỹ ]+\\s*:|$)","i");
+  const match = String(text).match(regex);
+  return match ? match[1].trim() : "";
+}
+
+function extractChineseAnswer(aiText){
+  const text = String(aiText || "");
+
+  let answer = extractLineValue(text,"ANSWER");
+  if(!answer) answer = extractLineValue(text,"Bản đúng");
+  if(!answer) answer = extractLineValue(text,"Bản dịch chuẩn");
+  if(!answer) answer = extractLineValue(text,"Bản dịch tham khảo");
+  if(!answer) answer = extractLineValue(text,"Đáp án");
+
+  if(!answer){
+    const markdownMatch = text.match(/(?:Bản dịch chuẩn|Bản đúng|Đáp án)[^\n]*\n+([\s\S]*?)(?=\n+#{1,6}\s|\n+Pinyin|$)/i);
+    if(markdownMatch) answer = markdownMatch[1].trim();
+  }
+
+  answer = answer
+    .replace(/Pinyin[\s\S]*$/i,"")
+    .replace(/PINYIN[\s\S]*$/i,"")
+    .replace(/^[\s:"“”'`*-]+|[\s:"“”'`*-]+$/g,"")
+    .split("\n")[0]
+    .trim();
+
+  answer = answer
+    .replace(/^ANSWER\s*:\s*/i,"")
+    .replace(/^Bản đúng\s*:\s*/i,"")
+    .replace(/^Bản dịch chuẩn\s*:\s*/i,"")
+    .replace(/^Đáp án\s*:\s*/i,"")
+    .trim();
+
+  return answer;
+}
+
+function cleanGeneratedText(text){
+  return String(text)
+    .replace(/^["“”]+|["“”]+$/g,"")
+    .replace(/^[-•]\s*/gm,"")
+    .trim();
+}
+
+function setSourceText(direction,text,pinyin = ""){
+  const cleanText = cleanGeneratedText(text);
+  const cleanPinyin = String(pinyin || "").trim();
+
+  if(direction === "cn2vn"){
+    const el = document.getElementById("source-cn2vn");
+
+    el.dataset.text = cleanText;
+
+    el.innerHTML = `
+      ${escapeHtml(cleanText)}
+      ${cleanPinyin ? `<div class="source-pinyin">${escapeHtml(cleanPinyin)}</div>` : ""}
+    `;
+
+    document.getElementById("input-cn2vn").value = "";
+    document.getElementById("feedback-cn2vn").className = "feedback-box";
+    document.getElementById("feedback-cn2vn").innerHTML = "";
+  }
+
+  if(direction === "vn2cn"){
+    const el = document.getElementById("source-vn2cn");
+
+    el.dataset.text = cleanText;
+    el.textContent = cleanText;
+
+    document.getElementById("input-vn2cn").value = "";
+    document.getElementById("feedback-vn2cn").className = "feedback-box";
+    document.getElementById("feedback-vn2cn").innerHTML = "";
+  }
+}
+
+async function generateNewText(direction){
+  const btn = direction === "cn2vn"
+    ? document.getElementById("btn-generate-cn")
+    : document.getElementById("btn-generate-vn");
+
+  const feedbackBox = direction === "cn2vn"
+    ? document.getElementById("feedback-cn2vn")
+    : document.getElementById("feedback-vn2cn");
+
+  btn.disabled = true;
+  showTranslationLoading(feedbackBox,"⏳ AI đang tự tạo đề mới...");
+
+  let prompt = "";
+
+  if(direction === "cn2vn"){
+    prompt = `
+Tạo 1 đoạn tiếng Trung giản thể ngắn cho người mới học dịch sang tiếng Việt.
+
+Yêu cầu:
+- Trình độ HSK 1 đến HSK 2.
+- 2 đến 3 câu.
+- Dùng các mẫu câu đơn giản với 这, 那, 谁, 的, 是, 不, 朋友, 老师, 学生, 书, 手机, 车, 钱包.
+- Trả về đúng 2 dòng theo format:
+HANZI: đoạn tiếng Trung giản thể
+PINYIN: pinyin có dấu thanh
+
+Không dịch tiếng Việt, không giải thích.
+`;
+  }
+
+  if(direction === "vn2cn"){
+    prompt = `
+Tạo 1 đoạn tiếng Việt ngắn cho người mới học dịch sang tiếng Trung.
+
+Yêu cầu:
+- 2 đến 3 câu.
+- Nội dung xoay quanh bạn bè, giáo viên, học sinh, sách, điện thoại, xe, ví tiền.
+- Câu ngắn, dễ dịch sang tiếng Trung HSK 1 đến HSK 2.
+- Chỉ trả về đoạn tiếng Việt.
+- Không dịch, không giải thích.
+`;
+  }
+
+  try{
+    const aiText = await callGeminiText(prompt,180);
+
+    if(direction === "cn2vn"){
+      let hanzi = extractLineValue(aiText,"HANZI");
+      let pinyin = extractLineValue(aiText,"PINYIN");
+
+      if(!hanzi){
+        hanzi = aiText
+          .replace(/PINYIN\s*:[\s\S]*/i,"")
+          .replace(/HANZI\s*:/i,"")
+          .trim();
+      }
+
+      setSourceText("cn2vn",hanzi,pinyin);
+    }
+
+    if(direction === "vn2cn"){
+      setSourceText("vn2cn",aiText);
+    }
+
+    showTranslationResult(feedbackBox,"Đã tạo đề mớ.");
+
+  }catch(error){
+    showTranslationError(feedbackBox,error);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function checkTranslation1(){
+  const userInput = document.getElementById("input-cn2vn").value.trim();
+  const feedbackBox = document.getElementById("feedback-cn2vn");
+  const btn = document.getElementById("btn-cn2vn");
+
+  if(!userInput){
+    alert("Bạn chưa nhập bản dịch ạ!");
+    return;
+  }
+
+  const originalText = document.getElementById("source-cn2vn").dataset.text.trim();
+
+  const prompt = `
+Đóng vai một gia sư tiếng Trung tận tâm, xưng là "Thầy" và gọi học viên là "Học Trò".
+
+Đoạn gốc tiếng Trung:
+"${originalText}"
+
+Bản dịch tiếng Việt của học viên:
+"${userInput}"
+
+Nhiệm vụ:
+1. Chấm bản dịch theo thang 10 điểm.
+2. Nếu đúng, hãy khen ngợi.
+3. Nếu có chỗ sai hoặc chưa mượt, hãy chỉ ra nhẹ nhàng.
+4. Đưa ra bản dịch tham khảo chuẩn và tự nhiên hơn.
+5. Trả lời ngắn gọn, rõ ràng, dễ hiểu.
+`;
+
+  btn.disabled = true;
+  showTranslationLoading(feedbackBox,"⏳ AI đang chấm bản dịch...");
+
+  try{
+    const text = await callGeminiText(prompt,600);
+    showTranslationResult(feedbackBox,text);
+  }catch(error){
+    showTranslationError(feedbackBox,error);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function checkTranslation2(){
+  const userInput = document.getElementById("input-vn2cn").value.trim();
+  const feedbackBox = document.getElementById("feedback-vn2cn");
+  const btn = document.getElementById("btn-vn2cn");
+
+  if(!userInput){
+    alert("Bạn chưa nhập bản dịch ạ!");
+    return;
+  }
+
+  const originalText = document.getElementById("source-vn2cn").dataset.text.trim();
+
+  const prompt = `
+Đóng vai một gia sư tiếng Trung tận tâm, xưng là "Thầy" và gọi học viên là "Trò".
+
+Câu gốc tiếng Việt:
+"${originalText}"
+
+Bản dịch tiếng Trung của học viên:
+"${userInput}"
+
+Nhiệm vụ:
+1. Kiểm tra bản dịch Hán tự có đúng ngữ pháp và từ vựng không.
+2. Chấm điểm theo thang 10 điểm.
+3. Chỉ ra lỗi sai nếu có, giải thích ngắn gọn.
+4. Cung cấp bản dịch chuẩn bằng Hán tự.
+5. Bên dưới bản dịch chuẩn, thêm Pinyin.
+6. Trả lời ngắn gọn, súc tích.
+
+QUAN TRỌNG:
+Dòng bản dịch chuẩn bắt buộc phải viết đúng format này để hệ thống đọc tiếng Trung:
+ANSWER: câu tiếng Trung giản thể đầy đủ
+
+Dòng pinyin bắt buộc viết đúng format này:
+PINYIN: pinyin đầy đủ
+`;
+
+  btn.disabled = true;
+  showTranslationLoading(feedbackBox,"⏳ AI đang chấm bản dịch...");
+
+  try{
+    const text = await callGeminiText(prompt,700);
+    const chineseAnswer = extractChineseAnswer(text);
+
+    showTranslationResult(feedbackBox,text,chineseAnswer);
+  }catch(error){
+    showTranslationError(feedbackBox,error);
+  }finally{
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
