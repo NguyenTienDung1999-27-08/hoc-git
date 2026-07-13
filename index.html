@@ -352,32 +352,6 @@ textarea.translate-input:focus{outline:none;border-color:var(--jade);background:
 
 <script>
 /* API GEMINI */
-// Kiểm tra xem đã có Key trong trình duyệt chưa...
-/* SỬA THÀNH HÀM NÀY: */
-async function callOneGeminiModel(model, prompt, maxOutputTokens = 220) {
-  const response = await fetch('/api/chat', { // Phải là /api/chat
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: prompt })
-  });
-
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.error || "Lỗi Server");
-  }
-
-  return data.candidates[0].content.parts[0].text.trim();
-}
-const GEMINI_MODELS = [
-  "gemini-3.1-flash-lite",
-  "gemini-3-flash-preview",
-  "gemini-2.0-flash-lite",
-  "gemini-2.0-flash"
-];
-
-let WORKING_MODEL = null;
-
 function escapeHtml(text){
   return String(text)
     .replaceAll("&","&amp;")
@@ -394,54 +368,27 @@ function formatAIText(text){
   return safeText;
 }
 
-async function callOneGeminiModel(model,prompt,maxOutputTokens=220){
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-  const response = await fetch(url,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      contents:[{parts:[{text:prompt}]}],
-      generationConfig:{temperature:.35,maxOutputTokens:maxOutputTokens}
-    })
+// HÀM GỌI AI DUY NHẤT LÊN SERVER CỦA NGÀI
+async function callGeminiText(prompt) {
+  const response = await fetch('/api/chat', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: prompt })
   });
 
   const data = await response.json();
 
-  if(!response.ok){
-    throw new Error(data?.error?.message || `Không gọi được model ${model}.`);
+  if (!response.ok) {
+    throw new Error(data.error || "Lỗi Server");
   }
 
   const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-  if(!aiText){
-    throw new Error(`Model ${model} không trả về nội dung.`);
+  if (!aiText) {
+    throw new Error("AI không trả về kết quả.");
   }
 
   return aiText.trim();
-}
-
-async function callGeminiText(prompt,maxOutputTokens=220){
-  if(!GEMINI_API_KEY){
-    throw new Error("Chưa điền GEMINI_API_KEY.");
-  }
-
-  const modelsToTry = WORKING_MODEL
-    ? [WORKING_MODEL,...GEMINI_MODELS.filter(m => m !== WORKING_MODEL)]
-    : GEMINI_MODELS;
-
-  const errors = [];
-
-  for(const model of modelsToTry){
-    try{
-      const text = await callOneGeminiModel(model,prompt,maxOutputTokens);
-      WORKING_MODEL = model;
-      return text;
-    }catch(error){
-      errors.push(`${model}: ${error.message}`);
-    }
-  }
-
-  throw new Error(errors.join("\n\n"));
 }
 
 /* DATA */
@@ -531,7 +478,7 @@ Chỉ trả lời đúng 1 dòng:
 `;
 
   try{
-    const text = await callGeminiText(prompt,100);
+    const text = await callGeminiText(prompt);
     return `SUCCESS|${text}`;
   }catch(error){
     return `ERROR|⚠️ Lỗi API: ${error.message}`;
@@ -1115,7 +1062,7 @@ Yêu cầu:
   }
 
   try{
-    const aiText = await callGeminiText(prompt,180);
+    const aiText = await callGeminiText(prompt);
 
     if(direction === "cn2vn"){
       let hanzi = extractLineValue(aiText,"HANZI");
@@ -1177,7 +1124,7 @@ Nhiệm vụ:
   showTranslationLoading(feedbackBox,"⏳ AI đang chấm bản dịch...");
 
   try{
-    const text = await callGeminiText(prompt,600);
+    const text = await callGeminiText(prompt);
     showTranslationResult(feedbackBox,text);
   }catch(error){
     showTranslationError(feedbackBox,error);
@@ -1227,7 +1174,7 @@ PINYIN: pinyin đầy đủ
   showTranslationLoading(feedbackBox,"⏳ AI đang chấm bản dịch...");
 
   try{
-    const text = await callGeminiText(prompt,700);
+    const text = await callGeminiText(prompt);
     const chineseAnswer = extractChineseAnswer(text);
 
     showTranslationResult(feedbackBox,text,chineseAnswer);
